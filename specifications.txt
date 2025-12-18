@@ -1,0 +1,339 @@
+Project Specification – Polaris: Multi-Agent Escalation Simulation
+1. Project Overview
+
+Polaris is a lightweight prototype demonstrating a multi-agent crisis response simulation system.
+
+Users submit a textual description of a geopolitical event.
+The backend models reactions from multiple world-leader archetype agents, each with predefined behavioral traits.
+
+Agents retrieve similar historical events (via vector search on PostgreSQL with pgvector), then use RAG to condition an LLM. The agent outputs a structured escalation response including risk score, rationale, and predicted reaction type.
+
+The project showcases:
+
+typed async FastAPI services
+
+agent-based reasoning pipeline
+
+vector DB + embeddings + semantic search
+
+PostgreSQL schema + migrations
+
+asyncio orchestrated multi-agent execution
+
+minimal React UI
+
+observability/logging considerations
+
+2. Objectives
+
+Demonstrate ability to architect an async backend service using Python + FastAPI
+
+Showcase vector search and RAG-RL style reasoning pipeline
+
+Implement multi-agent orchestration with distinct leader profiles
+
+Persist agents, events, embeddings, and assessments in PostgreSQL
+
+Expose REST APIs consumed by a React frontend
+
+Deliver complete end-to-end pipeline within ~10 hours
+
+3. User Stories
+US-1: Submit Event for Simulation
+
+As a user, I can submit a textual description of a geopolitical incident for analysis.
+
+US-2: View Simulation Results
+
+As a user, I can view predicted responses from multiple leader agents including:
+
+escalation risk score
+
+reaction type
+
+reasoning
+
+US-3: View Simulation History
+
+As a user, I can view past submitted events and agent responses.
+
+US-4: View Available Leader Archetypes
+
+As a user, I can view predefined leader profiles and traits.
+
+4. Features
+Core Features
+
+Input geopolitical event text
+
+Store event + embedding
+
+Retrieve similar seed events (pgvector)
+
+Multi-agent reaction simulation pipeline
+
+Generate score + reasoning per agent
+
+Persist results
+
+Display simulation history
+
+Simple React UI
+
+Leader Archetypes (example)
+
+Revisionist Expansionist
+
+Status-quo Diplomat
+
+Crisis Populist
+
+Isolationist Stabilizer
+
+Each leader has:
+
+aggression
+
+diplomacy preference
+
+risk tolerance
+
+domestic pressure
+
+escalation threshold
+
+These are JSON-stored numeric scales 0–10.
+
+5. Functional Requirements
+FR-1: Event Ingestion
+
+User submits event description string.
+
+FR-2: Embedding Computation
+
+System embeds the event using external embedding API.
+
+FR-3: Vector Similarity Retrieval
+
+Retrieve top-k most similar historical events.
+
+FR-4: Agent Simulation Execution
+
+For each leader agent:
+
+retrieve traits
+
+pass event, context, traits to LLM
+
+produce structured JSON response
+
+FR-5: Response Storage
+
+Persist:
+
+submitted event
+
+embedding
+
+simulation outcomes
+
+FR-6: History Retrieval
+
+Return list of past events + results.
+
+FR-7: Leader Trait Viewing
+
+Return static list of leader profiles.
+
+FR-8 API Validation
+
+All incoming/outgoing data validated using Pydantic models.
+
+6. Non-Functional Requirements
+NFR-1: Async Architecture
+
+All network + DB calls must be asynchronous.
+
+NFR-2: Observability
+
+Log:
+
+request IDs
+
+endpoint latency
+
+errors
+
+Minimal metrics: counters per endpoint.
+
+NFR-3: Deterministic Output Format
+
+Require LLM to return structured JSON responses.
+
+NFR-4: Security/Privacy
+
+validate max text lengths
+
+sanitize logging output
+
+avoid personally identifiable information
+
+NFR-5: Ethical Consideration
+
+leaders modeled as archetypes
+
+avoid real individual references
+
+include disclaimer
+
+NFR-6: Reproducibility
+
+Same input + DB state → reproducible outcome.
+
+7. System Architecture
+
+High-level pipeline:
+
+React UI (web)  
+   ↓  
+FastAPI REST service  
+   ↓  
+Agent Coordinator (async orchestrator)  
+   ├─ embed(event)  
+   ├─ vector_search(seed_data)  
+   └─ spawn N leader agents concurrently  
+         └─ LLM prompt w/ leader traits + RAG context  
+   ↓  
+PostgreSQL + pgvector for persistence  
+
+8. Database Schema (simplified)
+Table: events
+
+id UUID PK
+
+text TEXT
+
+embedding VECTOR(1536)
+
+created_at TIMESTAMP
+
+Table: leader_profiles
+
+id UUID PK
+
+name TEXT
+
+aggression INT
+
+diplomacy INT
+
+risk_tolerance INT
+
+domestic_pressure INT
+
+escalation_threshold INT
+
+Table: simulations
+
+id UUID PK
+
+event_id UUID FK
+
+created_at TIMESTAMP
+
+Table: leader_sim_results
+
+id UUID PK
+
+simulation_id UUID FK
+
+leader_id UUID FK
+
+escalation_score FLOAT
+
+reaction TEXT
+
+rationale TEXT
+
+9. API Endpoints
+POST /api/simulate
+
+Payload:
+
+{ "text": "..." }
+
+
+Response:
+
+{
+  "simulation_id": "...",
+  "results": [
+    {
+      "leader": "Revisionist Expansionist",
+      "score": 8.2,
+      "reaction": "Troop deployment",
+      "rationale": "...",
+      "similar_events": [...]
+    }
+  ]
+}
+
+GET /api/history
+
+Returns list of past simulations + top-level summary.
+
+GET /api/leaders
+
+Returns list of leader profiles.
+
+10. LLM Agent Output Schema
+
+Each agent must return:
+
+{
+  "leader": "<string>",
+  "escalation_score": float,
+  "reaction": "<short string>",
+  "rationale": "<1-2 sentences>",
+  "similar_events": [ "<text>" ]
+}
+
+11. Seed Data Requirements
+
+At startup:
+
+insert static leader profiles
+
+insert 10–20 example seed historical events
+
+embed and store vectors
+
+12. Out of Scope
+
+real geopolitical forecasting
+
+autonomous agent planning
+
+reinforcement learning
+
+real-time data feeds
+
+map-based visualization
+
+model uncertainty quantification
+
+13. Success Criteria
+
+The project is considered complete if:
+
+user submits event text
+
+system runs multi-agent simulation
+
+results include structured JSON score + reaction
+
+results are persisted
+
+retrieval + RAG influence outputs
+
+UI displays results & history
