@@ -1,5 +1,7 @@
 # Polaris
 
+Try it here: https://polaris-vercel-nine.vercel.app/
+
 **Multi-Agent Crisis Response Simulation**
 
 Polaris models how different world leader archetypes might respond to geopolitical crises. Using RAG (Retrieval-Augmented Generation) and concurrent AI agents, it simulates reactions from four distinct leadership personalities, each with unique traits that influence their decision-making.
